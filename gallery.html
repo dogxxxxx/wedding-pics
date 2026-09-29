@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>公開相簿｜婚禮相片牆</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1>💐 婚禮相片牆</h1>
+    <p>大家上傳的照片與影片都在這裡，點擊可放大瀏覽或下載</p>
+  </header>
+
+  <nav class="site-nav">
+    <a href="index.html">上傳照片</a>
+    <a href="gallery.html" class="active">公開相簿</a>
+  </nav>
+
+  <main class="page">
+    <div id="gallery-status"></div>
+    <div class="gallery-grid" id="gallery-grid"></div>
+    <p class="empty-state" id="gallery-empty" style="display:none;">
+      目前還沒有照片，快去上傳第一張吧！
+    </p>
+  </main>
+
+  <div class="lightbox-overlay hidden" id="lightbox">
+    <button class="lightbox-close" id="lightbox-close">✕</button>
+    <button class="lightbox-nav prev" id="lightbox-prev">‹</button>
+    <div class="lightbox-content">
+      <div id="lightbox-content"></div>
+      <div class="lightbox-meta" id="lightbox-meta"></div>
+    </div>
+    <button class="lightbox-nav next" id="lightbox-next">›</button>
+  </div>
+
+  <footer class="site-footer">照片經新人審核通過後才會顯示於此</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script type="module" src="assets/js/gallery.js"></script>
+</body>
+</html>

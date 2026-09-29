@@ -1,0 +1,33 @@
+{
+  "_comment": "這個檔案會被前端網頁讀取，anon key 本來就設計成可公開（安全性由 Supabase RLS 規則把關），可以放心提交到 GitHub。priority 數字越小代表越優先被用來上傳，滿了/被關閉會自動換下一個。enabled=false 代表這個專案位置先保留、尚未建立，前端會略過它。",
+  "projects": [
+    {
+      "label": "Wedding pics",
+      "url": "https://ozjhkypxbhnmgugejkei.supabase.co",
+      "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96amhreXB4YmhubWd1Z2Vqa2VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2MTA2OTgsImV4cCI6MjEwNjE4NjY5OH0.MR52hZsqB6C_0UWouu8Ayy1kNcxxn-CUBCHSfwDuVzE",
+      "priority": 1,
+      "enabled": true
+    },
+    {
+      "label": "Wedding pics 2",
+      "url": "",
+      "anonKey": "",
+      "priority": 2,
+      "enabled": false
+    },
+    {
+      "label": "Wedding pics 3",
+      "url": "",
+      "anonKey": "",
+      "priority": 3,
+      "enabled": false
+    },
+    {
+      "label": "Wedding pics 4",
+      "url": "",
+      "anonKey": "",
+      "priority": 4,
+      "enabled": false
+    }
+  ]
+}

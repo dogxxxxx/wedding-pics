@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>上傳照片｜婚禮相片牆</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1>💐 婚禮相片牆</h1>
+    <p>謝謝你來參加我們的婚禮，歡迎上傳當天拍的照片與影片！</p>
+  </header>
+
+  <nav class="site-nav">
+    <a href="index.html" class="active">上傳照片</a>
+    <a href="gallery.html">公開相簿</a>
+  </nav>
+
+  <main class="page">
+    <div class="card">
+      <h2>上傳照片／影片</h2>
+      <p style="color: var(--color-muted); font-size: 0.9rem; margin-top: -8px;">
+        上傳後會經過新人審核，通過後才會出現在公開相簿中。
+      </p>
+
+      <div id="form-status"></div>
+
+      <form id="upload-form">
+        <label class="field-label" for="uploader-name">你的名字 *</label>
+        <input type="text" id="uploader-name" placeholder="例如：小明" required maxlength="50" />
+
+        <label class="field-label" for="caption">留言（選填）</label>
+        <textarea id="caption" placeholder="留下一句話給新人吧！" maxlength="200"></textarea>
+
+        <label class="field-label">照片／影片 *</label>
+        <div class="file-drop" id="file-drop">
+          <span id="file-list-label">點此選擇或拖曳照片／影片到這裡（可一次選多個）</span>
+          <input type="file" id="file-input" accept="image/*,video/*" multiple />
+        </div>
+
+        <button type="submit" class="btn" id="submit-btn">送出上傳</button>
+      </form>
+
+      <div class="upload-queue" id="upload-queue"></div>
+    </div>
+  </main>
+
+  <footer class="site-footer">單張照片上限 20MB，單支影片上限 100MB</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script type="module" src="assets/js/upload.js"></script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>審核後台｜婚禮相片牆</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1>🔐 婚禮相片牆・審核後台</h1>
+    <p>登入後可審核照片、監控各專案容量與流量</p>
+  </header>
+
+  <main class="page">
+    <div id="login-section">
+      <div class="card login-box">
+        <h2>管理員登入</h2>
+        <div id="login-status"></div>
+        <form id="login-form">
+          <label class="field-label" for="login-email">Email</label>
+          <input type="email" id="login-email" required />
+
+          <label class="field-label" for="login-password">密碼</label>
+          <input type="password" id="login-password" required />
+
+          <button type="submit" class="btn" style="width:100%;">登入</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="dashboard-section" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+        <div id="dashboard-status" style="flex:1;"></div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-secondary btn-small" id="refresh-all-btn">重新整理</button>
+          <button class="btn btn-secondary btn-small" id="logout-btn">登出</button>
+        </div>
+      </div>
+      <div id="project-panels"></div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script type="module" src="assets/js/admin.js"></script>
+</body>
+</html>
