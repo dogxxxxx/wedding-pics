@@ -10,17 +10,17 @@
     },
     {
       "label": "Wedding pics 2",
-      "url": "",
-      "anonKey": "",
+      "url": "https://jbbsngwaphqeafzbcldm.supabase.co",
+      "anonKey": "sb_publishable_nSJdo1j9hWgAqUvU_XjMwg_ti_fm-3N",
       "priority": 2,
-      "enabled": false
+      "enabled": true
     },
     {
       "label": "Wedding pics 3",
-      "url": "",
-      "anonKey": "",
+      "url": "https://sagravnmxvbyplszigzw.supabase.co",
+      "anonKey": "sb_publishable_nP7WZNGMd7_4Nv81hbz26w_h7MXIKy7",
       "priority": 3,
-      "enabled": false
+      "enabled": true
     },
     {
       "label": "Wedding pics 4",
