@@ -528,3 +528,119 @@ footer.site-footer {
   font-size: 0.8rem;
   padding: 24px 16px;
 }
+
+.hidden { display: none !important; }
+
+.lottery-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.lottery-table th,
+.lottery-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* ---- 中獎畫面 ---- */
+.winner-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: radial-gradient(circle at 50% 30%, rgba(80, 50, 20, 0.88), rgba(20, 10, 5, 0.96));
+  animation: winner-fade 0.4s ease;
+}
+
+.winner-overlay canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.winner-card {
+  position: relative;
+  width: min(92vw, 380px);
+  max-height: 92vh;
+  overflow-y: auto;
+  text-align: center;
+  background: var(--color-card);
+  border: 3px solid #f6c945;
+  border-radius: 20px;
+  padding: 22px 20px 20px;
+  box-shadow: 0 0 40px rgba(246, 201, 69, 0.6);
+  animation: winner-pop 0.6s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+.winner-card h2 {
+  margin: 0 0 12px;
+  font-size: 1.6rem;
+  color: var(--color-primary-dark);
+  animation: winner-pulse 1.4s ease-in-out infinite;
+}
+
+.winner-photo-frame {
+  margin: 0 auto 14px;
+  padding: 8px;
+  background: #fff;
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  transform: rotate(-2deg);
+}
+
+.winner-photo-frame img {
+  display: block;
+  width: 100%;
+  max-height: 45vh;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.winner-line {
+  margin: 4px 0;
+  font-size: 1.1rem;
+}
+
+.winner-line strong {
+  font-size: 1.6rem;
+  color: var(--color-danger);
+}
+
+.winner-name {
+  margin: 0 0 8px;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.winner-hint {
+  margin: 0 0 14px;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+@keyframes winner-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes winner-pop {
+  from { transform: scale(0.4); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes winner-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .winner-overlay, .winner-card, .winner-card h2 { animation: none; }
+}

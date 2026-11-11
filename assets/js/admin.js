@@ -1,5 +1,6 @@
-// 審核後台邏輯：用同一組帳密登入所有已啟用的 Supabase 專案，
-// 顯示每個專案的待審核項目、儲存容量/估算流量用量，並可個別開關上傳功能。
+// 管理後台邏輯：用同一組帳密登入所有已啟用的 Supabase 專案，
+// 顯示每個專案的相片清單（可移除）、儲存容量/估算流量用量，並可個別開關上傳功能；
+// 另外在主要專案上設定中獎號碼、查看中獎者。沒有審核機制，上傳後即公開。
 
 import { loadProjects, formatBytes } from "./config.js";
 
@@ -12,6 +13,7 @@ const loginStatus = document.getElementById("login-status");
 const dashboardSection = document.getElementById("dashboard-section");
 const dashboardStatus = document.getElementById("dashboard-status");
 const panelsEl = document.getElementById("project-panels");
+const lotteryEl = document.getElementById("lottery-panel");
 const refreshAllBtn = document.getElementById("refresh-all-btn");
 const logoutBtn = document.getElementById("logout-btn");
 
@@ -89,6 +91,7 @@ logoutBtn.addEventListener("click", async () => {
   await Promise.all(activeProjects.map((p) => p.client.auth.signOut().catch(() => {})));
   activeProjects = [];
   panelsEl.innerHTML = "";
+  lotteryEl.innerHTML = "";
   dashboardSection.style.display = "none";
   loginSection.style.display = "block";
   setLoginStatus("");
@@ -98,16 +101,119 @@ refreshAllBtn.addEventListener("click", renderAllPanels);
 
 async function renderAllPanels() {
   panelsEl.innerHTML = "";
+  await renderLotteryPanel();
   for (const project of activeProjects) {
     const panel = await buildProjectPanel(project);
     panelsEl.appendChild(panel);
   }
 }
 
-/** 重新整理單一專案的面板（審核/移除動作完成後用來更新用量數字與清單）。 */
+/** 重新整理單一專案的面板（移除動作完成後用來更新用量數字與清單）。 */
 async function refreshProjectPanel(project, oldPanelEl) {
   const newPanel = await buildProjectPanel(project);
   oldPanelEl.replaceWith(newPanel);
+}
+
+/** 抽獎設定：中獎號碼只存在「主要專案」（projects.json 裡 priority 最小的專案）。 */
+async function renderLotteryPanel() {
+  const panel = lotteryEl;
+  panel.innerHTML = "";
+
+  const allProjects = await getClients();
+  const primaryLabel = allProjects[0].label;
+  const primary = activeProjects.find((p) => p.label === primaryLabel);
+  if (!primary) {
+    panel.innerHTML = `<div class="status-msg error">無法登入主要專案「${escapeHtml(primaryLabel)}」，抽獎設定暫時無法使用。</div>`;
+    return;
+  }
+
+  const [slotsRes, claimsRes] = await Promise.all([
+    primary.client.from("winning_numbers").select("*").order("seq", { ascending: true }),
+    primary.client.from("upload_claims").select("seq").order("seq", { ascending: false }).limit(1),
+  ]);
+  if (slotsRes.error || claimsRes.error) {
+    const msg = (slotsRes.error || claimsRes.error).message;
+    panel.innerHTML = `<div class="status-msg error">讀取抽獎設定失敗：${escapeHtml(msg)}（是否已在主要專案重新執行 setup.sql？）</div>`;
+    return;
+  }
+
+  const slots = slotsRes.data || [];
+  const lastSeq = claimsRes.data && claimsRes.data[0] ? claimsRes.data[0].seq : 0;
+
+  const rowsHtml = slots.length
+    ? slots
+        .map((s) => {
+          const status = s.awarded_upload_id
+            ? `🏆 <strong>${escapeHtml(s.winner_name || "匿名")}</strong>（上傳 #${s.awarded_seq}${
+                s.awarded_seq !== s.seq ? "，順延" : ""
+              }，${new Date(s.awarded_at).toLocaleString()}）`
+            : lastSeq >= s.seq
+            ? "⏳ 已到號碼，等待符合資格的上傳者"
+            : "尚未到達";
+          return `<tr>
+            <td>#${s.seq}</td>
+            <td>${escapeHtml(s.label || "")}</td>
+            <td>${status}</td>
+            <td><button class="btn btn-danger btn-small" data-seq="${s.seq}">刪除</button></td>
+          </tr>`;
+        })
+        .join("")
+    : `<tr><td colspan="4" class="empty-state">還沒有設定中獎號碼</td></tr>`;
+
+  panel.innerHTML = `
+    <div class="project-panel">
+      <div class="project-panel-header"><h3>🎁 抽獎設定（${escapeHtml(primaryLabel)}）</h3></div>
+      <div class="project-panel-body">
+        <p style="margin:0 0 12px;">目前已發出的上傳序號：<strong>${lastSeq}</strong></p>
+        <form id="slot-form" style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end; margin-bottom:12px;">
+          <div><label class="field-label" for="slot-seq">中獎號碼</label>
+            <input type="number" id="slot-seq" min="1" step="1" required style="width:120px;" /></div>
+          <div><label class="field-label" for="slot-label">備註（選填）</label>
+            <input type="text" id="slot-label" maxlength="30" placeholder="例如：頭獎" /></div>
+          <button type="submit" class="btn btn-small">新增</button>
+        </form>
+        <div style="overflow-x:auto;">
+          <table class="lottery-table">
+            <thead><tr><th>號碼</th><th>備註</th><th>狀態</th><th></th></tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+        <p style="color:var(--color-muted); font-size:0.85rem; margin:12px 0 0;">
+          規則：第 N 號上傳的賓客中獎；若他已經中過獎（同一個裝置），名額會順延給之後第一位還沒中過獎的上傳者。
+        </p>
+      </div>
+    </div>
+  `;
+
+  panel.querySelector("#slot-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const seq = parseInt(panel.querySelector("#slot-seq").value, 10);
+    const label = panel.querySelector("#slot-label").value.trim();
+    if (!Number.isInteger(seq) || seq < 1) return;
+    const { error } = await primary.client
+      .from("winning_numbers")
+      .insert({ seq, label: label || null });
+    if (error) {
+      alert(error.code === "23505" ? "這個號碼已經設定過了" : `新增失敗：${error.message}`);
+      return;
+    }
+    await renderLotteryPanel();
+  });
+
+  panel.querySelectorAll("button[data-seq]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm(`確定要刪除中獎號碼 #${btn.dataset.seq} 嗎？`)) return;
+      const { error } = await primary.client
+        .from("winning_numbers")
+        .delete()
+        .eq("seq", Number(btn.dataset.seq));
+      if (error) {
+        alert(`刪除失敗：${error.message}`);
+        return;
+      }
+      await renderLotteryPanel();
+    });
+  });
 }
 
 async function fetchProjectData(project) {
@@ -119,15 +225,12 @@ async function fetchProjectData(project) {
   if (settingsRes.error) throw settingsRes.error;
 
   const allRows = mediaRes.data || [];
-  const pending = allRows
-    .filter((r) => r.status === "pending")
-    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-  const approved = allRows
+  const photos = allRows
     .filter((r) => r.status === "approved")
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   const storageUsedBytes = allRows.reduce((sum, r) => sum + (r.size_bytes || 0), 0);
 
-  return { pending, approved, storageUsedBytes, settings: settingsRes.data };
+  return { photos, storageUsedBytes, settings: settingsRes.data };
 }
 
 function usageBarHtml(label, used, limit) {
@@ -199,105 +302,35 @@ async function buildProjectPanel(project) {
     usageBarHtml("估算流量（Egress）", data.settings.estimated_egress_bytes, EGRESS_LIMIT_BYTES);
   body.appendChild(usageWrap);
 
-  const pendingHeading = document.createElement("h4");
-  pendingHeading.textContent = `待審核 (${data.pending.length})`;
-  pendingHeading.style.margin = "16px 0 8px";
-  body.appendChild(pendingHeading);
+  const photosToggle = document.createElement("button");
+  photosToggle.className = "btn btn-secondary btn-small";
+  photosToggle.style.margin = "20px 0 12px";
+  photosToggle.textContent = `顯示相片 (${data.photos.length})`;
 
-  if (data.pending.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "empty-state";
-    empty.textContent = "目前沒有待審核的項目 🎉";
-    empty.style.padding = "12px 0";
-    body.appendChild(empty);
-  } else {
-    const grid = document.createElement("div");
-    grid.className = "pending-grid";
-    data.pending.forEach((row) => grid.appendChild(buildPendingItem(project, row, () => refreshProjectPanel(project, panel))));
-    body.appendChild(grid);
-  }
-
-  const approvedHeading = document.createElement("button");
-  approvedHeading.className = "btn btn-secondary btn-small";
-  approvedHeading.style.margin = "20px 0 12px";
-  approvedHeading.textContent = `顯示已通過相片 (${data.approved.length})`;
-
-  const approvedGrid = document.createElement("div");
-  approvedGrid.className = "pending-grid";
-  approvedGrid.style.display = "none";
-  data.approved.forEach((row) =>
-    approvedGrid.appendChild(buildApprovedItem(project, row, () => refreshProjectPanel(project, panel)))
+  const photosGrid = document.createElement("div");
+  photosGrid.className = "pending-grid";
+  photosGrid.style.display = "none";
+  data.photos.forEach((row) =>
+    photosGrid.appendChild(buildPhotoItem(project, row, () => refreshProjectPanel(project, panel)))
   );
 
-  approvedHeading.addEventListener("click", () => {
-    const showing = approvedGrid.style.display !== "none";
-    approvedGrid.style.display = showing ? "none" : "grid";
-    approvedHeading.textContent = showing
-      ? `顯示已通過相片 (${data.approved.length})`
-      : `隱藏已通過相片 (${data.approved.length})`;
+  photosToggle.addEventListener("click", () => {
+    const showing = photosGrid.style.display !== "none";
+    photosGrid.style.display = showing ? "none" : "grid";
+    photosToggle.textContent = showing
+      ? `顯示相片 (${data.photos.length})`
+      : `隱藏相片 (${data.photos.length})`;
   });
 
-  body.appendChild(approvedHeading);
-  body.appendChild(approvedGrid);
+  body.appendChild(photosToggle);
+  body.appendChild(photosGrid);
 
   panel.appendChild(header);
   panel.appendChild(body);
   return panel;
 }
 
-function buildPendingItem(project, row, onDone) {
-  const item = document.createElement("div");
-  item.className = "pending-item";
-
-  const thumbWrap = document.createElement("div");
-  thumbWrap.className = "thumb-wrap";
-
-  // pending bucket 是私有的，用簽名網址（短時效）給管理員預覽。
-  project.client.storage
-    .from("pending")
-    .createSignedUrl(row.storage_path, 300)
-    .then(({ data, error }) => {
-      if (error || !data) return;
-      if (row.media_type === "image") {
-        const img = document.createElement("img");
-        img.src = data.signedUrl;
-        thumbWrap.appendChild(img);
-      } else {
-        const video = document.createElement("video");
-        video.src = data.signedUrl;
-        video.controls = true;
-        thumbWrap.appendChild(video);
-      }
-    });
-
-  const meta = document.createElement("div");
-  meta.className = "meta";
-  meta.innerHTML = `
-    <strong>${escapeHtml(row.uploader_name || "匿名")}</strong>
-    ${row.caption ? escapeHtml(row.caption) : ""}
-    <div>${formatBytes(row.size_bytes)} · ${new Date(row.created_at).toLocaleString()}</div>
-  `;
-
-  const actions = document.createElement("div");
-  actions.className = "actions";
-
-  const approveBtn = document.createElement("button");
-  approveBtn.className = "btn btn-success btn-small";
-  approveBtn.textContent = "通過";
-  approveBtn.addEventListener("click", () => handleApprove(project, row, approveBtn, rejectBtn, onDone));
-
-  const rejectBtn = document.createElement("button");
-  rejectBtn.className = "btn btn-danger btn-small";
-  rejectBtn.textContent = "拒絕";
-  rejectBtn.addEventListener("click", () => handleReject(project, row, approveBtn, rejectBtn, onDone));
-
-  actions.append(approveBtn, rejectBtn);
-
-  item.append(thumbWrap, meta, actions);
-  return item;
-}
-
-function buildApprovedItem(project, row, onDone) {
+function buildPhotoItem(project, row, onDone) {
   const item = document.createElement("div");
   item.className = "pending-item";
 
@@ -306,6 +339,7 @@ function buildApprovedItem(project, row, onDone) {
   const { data: urlData } = project.client.storage.from("approved").getPublicUrl(row.storage_path);
   if (row.media_type === "image") {
     const img = document.createElement("img");
+    img.loading = "lazy";
     img.src = urlData.publicUrl;
     thumbWrap.appendChild(img);
   } else {
@@ -318,7 +352,7 @@ function buildApprovedItem(project, row, onDone) {
   const meta = document.createElement("div");
   meta.className = "meta";
   meta.innerHTML = `
-    <strong>${escapeHtml(row.uploader_name || "匿名")}</strong>
+    <strong>${row.seq ? `#${row.seq} ` : ""}${escapeHtml(row.uploader_name || "匿名")}</strong>
     ${row.caption ? escapeHtml(row.caption) : ""}
     <div>${formatBytes(row.size_bytes)} · ${new Date(row.created_at).toLocaleString()}</div>
   `;
@@ -329,7 +363,7 @@ function buildApprovedItem(project, row, onDone) {
   const removeBtn = document.createElement("button");
   removeBtn.className = "btn btn-danger btn-small";
   removeBtn.textContent = "移除";
-  removeBtn.addEventListener("click", () => handleRemoveApproved(project, row, removeBtn, onDone));
+  removeBtn.addEventListener("click", () => handleRemovePhoto(project, row, removeBtn, onDone));
 
   actions.append(removeBtn);
 
@@ -337,51 +371,8 @@ function buildApprovedItem(project, row, onDone) {
   return item;
 }
 
-async function handleApprove(project, row, approveBtn, rejectBtn, onDone) {
-  approveBtn.disabled = true;
-  rejectBtn.disabled = true;
-  approveBtn.textContent = "處理中…";
-  try {
-    const { error: moveError } = await project.client.storage
-      .from("pending")
-      .move(row.storage_path, row.storage_path, { destinationBucket: "approved" });
-    if (moveError) throw moveError;
-
-    const { error: updateError } = await project.client
-      .from("media")
-      .update({ status: "approved", bucket: "approved", approved_at: new Date().toISOString() })
-      .eq("id", row.id);
-    if (updateError) throw updateError;
-
-    await onDone();
-  } catch (err) {
-    alert(`通過失敗：${err.message}`);
-    approveBtn.disabled = false;
-    rejectBtn.disabled = false;
-    approveBtn.textContent = "通過";
-  }
-}
-
-async function handleReject(project, row, approveBtn, rejectBtn, onDone) {
-  if (!confirm("確定要拒絕並刪除這個檔案嗎？此動作無法復原。")) return;
-  approveBtn.disabled = true;
-  rejectBtn.disabled = true;
-  rejectBtn.textContent = "處理中…";
-  try {
-    await project.client.storage.from("pending").remove([row.storage_path]);
-    const { error } = await project.client.from("media").delete().eq("id", row.id);
-    if (error) throw error;
-    await onDone();
-  } catch (err) {
-    alert(`拒絕失敗：${err.message}`);
-    approveBtn.disabled = false;
-    rejectBtn.disabled = false;
-    rejectBtn.textContent = "拒絕";
-  }
-}
-
-async function handleRemoveApproved(project, row, removeBtn, onDone) {
-  if (!confirm("確定要把這張已公開的照片下架並刪除嗎？此動作無法復原。")) return;
+async function handleRemovePhoto(project, row, removeBtn, onDone) {
+  if (!confirm("確定要把這張照片從相簿移除並刪除嗎？此動作無法復原。")) return;
   removeBtn.disabled = true;
   removeBtn.textContent = "處理中…";
   try {

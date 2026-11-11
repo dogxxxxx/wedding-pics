@@ -1,4 +1,4 @@
-// 公開相簿頁邏輯：合併所有已啟用專案中「已審核通過」的照片/影片，依時間排序顯示，
+// 公開相簿頁邏輯：合併所有已啟用專案中的照片/影片，依時間排序顯示，
 // 並在照片/影片實際被載入時，呼叫 track_egress 估算流量消耗（供 admin 監控用）。
 
 import { loadProjects, formatBytes } from "./config.js";
@@ -25,7 +25,7 @@ function setStatus(message, type = "info") {
 async function fetchApprovedForProject(project) {
   const { data, error } = await project.client
     .from("media")
-    .select("id, storage_path, media_type, size_bytes, uploader_name, caption, created_at")
+    .select("id, storage_path, media_type, size_bytes, uploader_name, caption, created_at, seq")
     .eq("status", "approved")
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -68,10 +68,12 @@ function buildTile(item, index) {
     tile.appendChild(placeholder);
   }
 
-  if (item.uploader_name) {
+  if (item.uploader_name || item.seq) {
     const overlay = document.createElement("div");
     overlay.className = "caption-overlay";
-    overlay.textContent = item.uploader_name;
+    overlay.textContent = [item.seq ? `#${item.seq}` : "", item.uploader_name || ""]
+      .filter(Boolean)
+      .join(" ");
     tile.appendChild(overlay);
   }
 
@@ -119,6 +121,7 @@ function renderLightbox() {
   lightboxContent.appendChild(mediaEl);
 
   const parts = [];
+  if (item.seq) parts.push(`#${item.seq}`);
   if (item.uploader_name) parts.push(`👤 ${escapeHtml(item.uploader_name)}`);
   if (item.caption) parts.push(escapeHtml(item.caption));
   const downloadLink = `<a href="${item.publicUrl}" download style="color:#fff;text-decoration:underline;">下載</a>`;

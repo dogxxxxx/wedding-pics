@@ -21,9 +21,10 @@
     <div class="card">
       <h2>上傳照片／影片</h2>
       <p style="color: var(--color-muted); font-size: 0.9rem; margin-top: -8px;">
-        上傳並經過審核後才會出現在公開相簿中！
+        上傳後會直接出現在公開相簿中，每張照片都有專屬編號，說不定會有驚喜喔 🎁
       </p>
 
+      <button type="button" class="btn btn-secondary hidden" id="winner-reopen" style="margin-bottom: 12px;">🏆 查看我的中獎畫面</button>
       <div id="form-status"></div>
 
       <form id="upload-form">
@@ -47,6 +48,20 @@
   </main>
 
   <footer class="site-footer">單張照片上限 20MB，單支影片上限 100MB</footer>
+
+  <div id="winner-overlay" class="winner-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="winner-title">
+    <canvas id="confetti-canvas"></canvas>
+    <div class="winner-card">
+      <h2 id="winner-title">🎉 恭喜中獎 🎉</h2>
+      <div id="winner-photo-frame" class="winner-photo-frame hidden">
+        <img id="winner-photo" alt="" />
+      </div>
+      <p class="winner-line">你上傳的是第 <strong id="winner-seq"></strong> 張！</p>
+      <p id="winner-name" class="winner-name"></p>
+      <p class="winner-hint">請截圖這個畫面，向工作人員領取禮物</p>
+      <button type="button" class="btn" id="winner-close">關閉</button>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script type="module" src="assets/js/upload.js"></script>
