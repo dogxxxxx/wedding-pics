@@ -6,6 +6,8 @@
       "url": "https://ozjhkypxbhnmgugejkei.supabase.co",
       "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96amhreXB4YmhubWd1Z2Vqa2VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2MTA2OTgsImV4cCI6MjEwNjE4NjY5OH0.MR52hZsqB6C_0UWouu8Ayy1kNcxxn-CUBCHSfwDuVzE",
       "priority": 1,
+      "storageLimitGB": 100,
+      "egressLimitGB": 250,
       "enabled": true
     },
     {

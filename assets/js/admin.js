@@ -4,8 +4,17 @@
 
 import { loadProjects, formatBytes } from "./config.js";
 
-const STORAGE_LIMIT_BYTES = 1 * 1024 * 1024 * 1024; // 1GB，Supabase 免費方案的 Storage 上限
-const EGRESS_LIMIT_BYTES = 5 * 1024 * 1024 * 1024; // 5GB，Supabase 免費方案的流量上限
+const STORAGE_LIMIT_BYTES = 1 * 1024 * 1024 * 1024; // 預設 1GB，Supabase 免費方案的 Storage 上限
+const EGRESS_LIMIT_BYTES = 5 * 1024 * 1024 * 1024; // 預設 5GB，Supabase 免費方案的流量上限
+const GB = 1024 * 1024 * 1024;
+
+/** 升級過的專案可在 projects.json 用 storageLimitGB / egressLimitGB 覆寫用量上限。 */
+function limitsFor(project) {
+  return {
+    storage: project.storageLimitGB > 0 ? project.storageLimitGB * GB : STORAGE_LIMIT_BYTES,
+    egress: project.egressLimitGB > 0 ? project.egressLimitGB * GB : EGRESS_LIMIT_BYTES,
+  };
+}
 
 const loginSection = document.getElementById("login-section");
 const loginForm = document.getElementById("login-form");
@@ -297,9 +306,10 @@ async function buildProjectPanel(project) {
 
   const usageWrap = document.createElement("div");
   usageWrap.className = "usage-bars";
+  const limits = limitsFor(project);
   usageWrap.innerHTML =
-    usageBarHtml("Storage 容量", data.storageUsedBytes, STORAGE_LIMIT_BYTES) +
-    usageBarHtml("估算流量（Egress）", data.settings.estimated_egress_bytes, EGRESS_LIMIT_BYTES);
+    usageBarHtml("Storage 容量", data.storageUsedBytes, limits.storage) +
+    usageBarHtml("估算流量（Egress）", data.settings.estimated_egress_bytes, limits.egress);
   body.appendChild(usageWrap);
 
   const photosToggle = document.createElement("button");

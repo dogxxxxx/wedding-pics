@@ -604,18 +604,9 @@ footer.site-footer {
   border-radius: 6px;
 }
 
-.winner-line {
-  margin: 4px 0;
-  font-size: 1.1rem;
-}
-
-.winner-line strong {
-  font-size: 1.6rem;
-  color: var(--color-danger);
-}
-
 .winner-name {
   margin: 0 0 8px;
+  font-size: 1.2rem;
   font-weight: 600;
   word-break: break-all;
 }

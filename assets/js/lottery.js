@@ -109,7 +109,6 @@ function startConfetti(canvas) {
 export function initWinnerUi() {
   const overlay = document.getElementById("winner-overlay");
   const canvas = document.getElementById("confetti-canvas");
-  const seqEl = document.getElementById("winner-seq");
   const nameEl = document.getElementById("winner-name");
   const photoFrame = document.getElementById("winner-photo-frame");
   const photo = document.getElementById("winner-photo");
@@ -136,7 +135,6 @@ export function initWinnerUi() {
 
   function show(win) {
     currentWin = win;
-    seqEl.textContent = `#${win.seq}`;
     nameEl.textContent = win.name ? `${win.name}，恭喜你！` : "恭喜你！";
     overlay.classList.remove("hidden");
     stopConfetti();
